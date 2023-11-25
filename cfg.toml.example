@@ -1,0 +1,3 @@
+[kodiremote]
+wifi_ssid = "moo"
+wifi_psk = "some pass"
