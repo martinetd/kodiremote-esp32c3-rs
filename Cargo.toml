@@ -5,6 +5,7 @@ authors = ["Dominique Martinet <asmadeus@codewreck.org>"]
 edition = "2021"
 resolver = "2"
 rust-version = "1.71"
+license = "WTFPL"
 
 [profile.release]
 opt-level = "s"
