@@ -1,11 +1,10 @@
 use anyhow::Result;
 use core::str;
 
-use esp_idf_svc::{
-    eventloop::EspSystemEventLoop,
-    hal::{prelude::Peripherals, gpio::{PinDriver, Pull}},
-};
+use esp_idf_svc::{eventloop::EspSystemEventLoop, hal::prelude::Peripherals};
 
+mod board;
+mod keypad;
 mod kodi;
 mod wifi;
 
@@ -42,19 +41,27 @@ fn main() -> Result<()> {
         sysloop,
     )?;
 
-    let mut button = PinDriver::input(peripherals.pins.gpio9)?;
-    button.set_pull(Pull::Down)?;
-    let mut debounce = 0i8;
+    let mut board = board::init(peripherals.pins)?;
+    let mut last: Option<char> = None;
+    let mut debounce = 1i8;
 
     loop {
-        if button.is_high() {
-            debounce = 3;
+        let key = keypad::scan_keypad(&mut board.keypad)?;
+        if key != last {
+            last = key;
+            debounce = 3i8;
         } else if debounce > 0 {
             debounce -= 1;
         } else if debounce == 0 {
-            debounce -= 1;
-            log::info!("toggleing play/pause");
-            kodi::play_pause()?;
+            debounce = -1;
+            log::info!("Key pressed {key:?}");
+            match key {
+                Some('1') => {
+                    log::info!("toggling play/pause");
+                    kodi::play_pause()?;
+                }
+                _ => ()
+            };
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
