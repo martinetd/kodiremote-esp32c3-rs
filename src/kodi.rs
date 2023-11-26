@@ -6,6 +6,9 @@ use log::info;
 use crate::CONFIG;
 
 fn req(payload: impl AsRef<[u8]>) -> Result<()> {
+    if cfg!(feature = "nowifi") {
+        return Ok(());
+    }
     let connection = EspHttpConnection::new(&Configuration::default())?;
     let mut client = http::client::Client::wrap(connection);
     let headers = [

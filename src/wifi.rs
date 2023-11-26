@@ -22,6 +22,9 @@ pub fn wifi(
         info!("Wifi password is empty");
     }
     let mut esp_wifi = EspWifi::new(modem, sysloop.clone(), None)?;
+    if cfg!(feature = "nowifi") {
+        return Ok(Box::new(esp_wifi));
+    }
 
     let mut wifi = BlockingWifi::wrap(&mut esp_wifi, sysloop)?;
 
