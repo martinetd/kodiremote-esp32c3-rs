@@ -1,3 +1,5 @@
 [kodiremote]
 wifi_ssid = "moo"
 wifi_psk = "some pass"
+kodi_endpoint = "http://10.1.2.3:8080/jsonrpc"
+kodi_auth_basic = "Basic dGVzdDpwYXNz"

@@ -1,8 +1,12 @@
 use anyhow::Result;
 use core::str;
 
-use esp_idf_svc::{eventloop::EspSystemEventLoop, hal::prelude::Peripherals};
+use esp_idf_svc::{
+    eventloop::EspSystemEventLoop,
+    hal::{prelude::Peripherals, gpio::{PinDriver, Pull}},
+};
 
+mod kodi;
 mod wifi;
 
 #[toml_cfg::toml_config]
@@ -11,6 +15,10 @@ struct Config {
     wifi_ssid: &'static str,
     #[default("")]
     wifi_psk: &'static str,
+    #[default("http://10.1.2.3:8080/jsonrpc")]
+    kodi_endpoint: &'static str,
+    #[default("Basic dGVzdDpwYXNz")]
+    kodi_auth_basic: &'static str,
 }
 
 fn main() -> Result<()> {
@@ -34,8 +42,20 @@ fn main() -> Result<()> {
         sysloop,
     )?;
 
+    let mut button = PinDriver::input(peripherals.pins.gpio9)?;
+    button.set_pull(Pull::Down)?;
+    let mut debounce = 0i8;
+
     loop {
-        log::info!("Hello, world!");
-        std::thread::sleep(std::time::Duration::from_millis(300));
+        if button.is_high() {
+            debounce = 3;
+        } else if debounce > 0 {
+            debounce -= 1;
+        } else if debounce == 0 {
+            debounce -= 1;
+            log::info!("toggleing play/pause");
+            kodi::play_pause()?;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
     }
 }
