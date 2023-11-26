@@ -49,7 +49,11 @@ fn main() -> Result<()> {
     let mut toggle_led = false;
 
     loop {
-        let key = keypad::scan_keypad(&mut board.keypad)?;
+        let mut key = keypad::scan_keypad(&mut board.keypad)?;
+        // work around bad keyboard
+        if key == Some('#') && last == Some('3') {
+            key = Some('3');
+        }
         if key != last {
             if debounce >= 0 {
                 log::info!("{last:?} bounced to {key:?}?");
