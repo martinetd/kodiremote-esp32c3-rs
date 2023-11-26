@@ -51,6 +51,9 @@ fn main() -> Result<()> {
     loop {
         let key = keypad::scan_keypad(&mut board.keypad)?;
         if key != last {
+            if debounce >= 0 {
+                log::info!("{last:?} bounced to {key:?}?");
+            }
             last = key;
             debounce = 3i8;
         } else if debounce > 0 {
