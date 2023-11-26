@@ -6,6 +6,7 @@ use esp_idf_svc::{eventloop::EspSystemEventLoop, hal::prelude::Peripherals};
 mod board;
 mod keypad;
 mod kodi;
+mod led;
 mod wifi;
 
 #[toml_cfg::toml_config]
@@ -41,9 +42,11 @@ fn main() -> Result<()> {
         sysloop,
     )?;
 
-    let mut board = board::init(peripherals.pins)?;
+    let mut board = board::init(peripherals.pins, peripherals.rmt)?;
     let mut last: Option<char> = None;
     let mut debounce = 1i8;
+
+    let mut toggle_led = false;
 
     loop {
         let key = keypad::scan_keypad(&mut board.keypad)?;
@@ -60,7 +63,18 @@ fn main() -> Result<()> {
                     log::info!("toggling play/pause");
                     kodi::play_pause()?;
                 }
-                _ => ()
+                Some('2') => {
+                    if toggle_led {
+                        log::info!("Turning LED on");
+                        led::neopixel(led::Rgb::new(10, 10, 0), &mut board.led)?;
+                        toggle_led = false;
+                    } else {
+                        log::info!("Turning LED off");
+                        led::neopixel(led::Rgb::new(0, 0, 0), &mut board.led)?;
+                        toggle_led = true;
+                    }
+                }
+                _ => (),
             };
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
