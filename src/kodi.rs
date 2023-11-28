@@ -32,11 +32,9 @@ struct Vol {
     volume: i8,
 }
 
-static mut BUF: [u8; 256] = [0_u8; 256];
-
 fn req<Resp>(payload: impl AsRef<[u8]>, get_response: bool) -> Result<Option<Resp>>
 where
-    Resp: Deserialize<'static>,
+    Resp: for<'a> Deserialize<'a>,
 {
     if cfg!(feature = "nowifi") {
         return Ok(None);
@@ -57,23 +55,18 @@ where
     if !(200..300).contains(&status) {
         Err(anyhow!("Request failed"))?;
     }
-    if !get_response {
-        // XXX check errors; sent as 200...
-        // I (14433) kodiremote::kodi: Got {"error":{"code":-32700,"message":"Parse error."},"id":null,"jsonrpc":"2.0"}
+    let mut buf = [0_u8; 256];
+    let size = Read::read(&mut response, &mut buf)?;
+    log::info!("Got {}", String::from_utf8_lossy(&buf[0..size]));
 
-        unsafe {
-            let size = Read::read(&mut response, &mut BUF)?;
-            log::info!("Got {}", String::from_utf8_lossy(&BUF[0..size]));
-        }
+    // XXX check errors; sent as 200...
+    // I (14433) kodiremote::kodi: Got {"error":{"code":-32700,"message":"Parse error."},"id":null,"jsonrpc":"2.0"}
+    if !get_response {
         return Ok(None);
     }
-    // XXX unsafe: json apparently refernses the original buffer.. clone?
-    unsafe {
-        let size = Read::read(&mut response, &mut BUF)?;
-        log::info!("Got {}", String::from_utf8_lossy(&BUF[0..size]));
-        let json_response: JsonResponse<Resp> = serde_json::from_slice(&BUF[0..size])?;
-        Ok(Some(json_response.result))
-    }
+
+    let json_response: JsonResponse<Resp> = serde_json::from_slice(&buf[0..size])?;
+    Ok(Some(json_response.result))
 }
 
 pub fn play_pause() -> Result<()> {
