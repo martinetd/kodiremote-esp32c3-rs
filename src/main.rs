@@ -42,7 +42,7 @@ fn main() -> Result<()> {
         sysloop,
     )?;
 
-    let mut board = board::init(peripherals.pins, peripherals.rmt)?;
+    let mut board = board::init(peripherals.pins, peripherals.rmt, peripherals.adc1)?;
     let mut last: Option<char> = None;
     let mut debounce = 1i8;
 
@@ -80,6 +80,9 @@ fn main() -> Result<()> {
                         led::neopixel(led::Rgb::new(0, 0, 0), &mut board.led)?;
                         toggle_led = true;
                     }
+                }
+                Some('3') => {
+                    log::info!("ADC value: {}", board.adc.read(&mut board.adc_pin)?);
                 }
                 _ => (),
             };
