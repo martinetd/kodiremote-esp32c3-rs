@@ -21,6 +21,53 @@ struct Config {
     kodi_auth_basic: &'static str,
 }
 
+fn loop_once(
+    board: &mut board::Board,
+    last: &mut Option<char>,
+    debounce: &mut i8,
+    toggle_led: &mut bool,
+) -> Result<()> {
+    let mut key = keypad::scan_keypad(&mut board.keypad)?;
+    // work around bad keyboard
+    if key == Some('#') && *last == Some('3') {
+        key = Some('3');
+    }
+    if key != *last {
+        if *debounce >= 0 {
+            log::info!("{last:?} bounced to {key:?}?");
+        }
+        *last = key;
+        *debounce = 3i8;
+    } else if *debounce > 0 {
+        *debounce -= 1;
+    } else if *debounce == 0 {
+        *debounce = -1;
+        log::info!("Key pressed {key:?}");
+        match key {
+            Some('1') => {
+                log::info!("toggling play/pause");
+                kodi::play_pause()?;
+            }
+            Some('2') => {
+                if *toggle_led {
+                    log::info!("Turning LED on");
+                    led::neopixel(led::Rgb::new(10, 10, 0), &mut board.led)?;
+                    *toggle_led = false;
+                } else {
+                    log::info!("Turning LED off");
+                    led::neopixel(led::Rgb::new(0, 0, 0), &mut board.led)?;
+                    *toggle_led = true;
+                }
+            }
+            Some('3') => {
+                log::info!("ADC value: {}", board.adc.read(&mut board.adc_pin)?);
+            }
+            _ => (),
+        };
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
     // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
@@ -49,43 +96,8 @@ fn main() -> Result<()> {
     let mut toggle_led = false;
 
     loop {
-        let mut key = keypad::scan_keypad(&mut board.keypad)?;
-        // work around bad keyboard
-        if key == Some('#') && last == Some('3') {
-            key = Some('3');
-        }
-        if key != last {
-            if debounce >= 0 {
-                log::info!("{last:?} bounced to {key:?}?");
-            }
-            last = key;
-            debounce = 3i8;
-        } else if debounce > 0 {
-            debounce -= 1;
-        } else if debounce == 0 {
-            debounce = -1;
-            log::info!("Key pressed {key:?}");
-            match key {
-                Some('1') => {
-                    log::info!("toggling play/pause");
-                    kodi::play_pause()?;
-                }
-                Some('2') => {
-                    if toggle_led {
-                        log::info!("Turning LED on");
-                        led::neopixel(led::Rgb::new(10, 10, 0), &mut board.led)?;
-                        toggle_led = false;
-                    } else {
-                        log::info!("Turning LED off");
-                        led::neopixel(led::Rgb::new(0, 0, 0), &mut board.led)?;
-                        toggle_led = true;
-                    }
-                }
-                Some('3') => {
-                    log::info!("ADC value: {}", board.adc.read(&mut board.adc_pin)?);
-                }
-                _ => (),
-            };
+        if let Err(e) = loop_once(&mut board, &mut last, &mut debounce, &mut toggle_led) {
+            log::info!("Got error: {:?}", e);
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
