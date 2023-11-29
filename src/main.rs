@@ -103,6 +103,11 @@ fn main() -> Result<()> {
 
     let mut toggle_led = false;
 
+    // signal we got wifi and we're ready
+    led::neopixel(led::Rgb::new(10, 10, 0), &mut board.led)?;
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    led::neopixel(led::Rgb::new(0, 0, 0), &mut board.led)?;
+
     loop {
         if let Err(e) = loop_once(&mut board, &mut last, &mut debounce, &mut toggle_led) {
             log::info!("Got error: {:?}", e);
