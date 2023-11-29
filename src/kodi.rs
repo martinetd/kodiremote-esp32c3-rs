@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Context, Result};
+use core::any::TypeId;
 use embedded_svc::{
     http,
     io::{Read, Write},
@@ -62,10 +63,10 @@ struct Vol {
     volume: i8,
 }
 
-fn req<'a, Req, Resp>(method: &'a str, params: &'a Req, get_response: bool) -> Result<Option<Resp>>
+fn req<'a, Req, Resp>(method: &'a str, params: &'a Req) -> Result<Option<Resp>>
 where
     Req: Serialize,
-    Resp: for<'b> Deserialize<'b>,
+    Resp: for<'b> Deserialize<'b> + 'static,
 {
     if cfg!(feature = "nowifi") {
         return Ok(None);
@@ -101,7 +102,7 @@ where
     if let Ok(json_error) = serde_json::from_slice::<JsonError>(&buf[0..size]) {
         return Err(anyhow!("Failed: {}", json_error.error.message));
     }
-    if !get_response {
+    if TypeId::of::<Resp>() == TypeId::of::<()>() {
         return Ok(None);
     }
 
@@ -110,12 +111,12 @@ where
 }
 
 pub fn play_pause() -> Result<()> {
-    req::<PlayerId, ()>("Player.PlayPause", &PlayerId { playerid: 0 }, false)?;
+    req::<PlayerId, ()>("Player.PlayPause", &PlayerId { playerid: 0 })?;
     Ok(())
 }
 
 pub fn set_vol(volume: i8) -> Result<()> {
-    req::<Volume, ()>("Application.SetVolume", &Volume { volume }, false)?;
+    req::<Volume, ()>("Application.SetVolume", &Volume { volume })?;
     Ok(())
 }
 pub fn update_vol(increment: i8) -> Result<()> {
@@ -124,7 +125,6 @@ pub fn update_vol(increment: i8) -> Result<()> {
         &Properties {
             properties: &["volume"],
         },
-        true,
     )?
     .context("No response")?;
     let new_vol = match cur_vol.volume + increment {
