@@ -28,6 +28,22 @@ struct JsonResponse<Payload> {
 }
 
 #[derive(Deserialize)]
+struct JsonErrorInner {
+    #[allow(unused)]
+    code: i32,
+    message: String,
+}
+
+#[derive(Deserialize)]
+struct JsonError {
+    #[allow(unused)]
+    jsonrpc: String,
+    #[allow(unused)]
+    id: u8,
+    error: JsonErrorInner,
+}
+
+#[derive(Deserialize)]
 struct Vol {
     volume: i8,
 }
@@ -59,8 +75,9 @@ where
     let size = Read::read(&mut response, &mut buf)?;
     log::info!("Got {}", String::from_utf8_lossy(&buf[0..size]));
 
-    // XXX check errors; sent as 200...
-    // I (14433) kodiremote::kodi: Got {"error":{"code":-32700,"message":"Parse error."},"id":null,"jsonrpc":"2.0"}
+    if let Ok(json_error) = serde_json::from_slice::<JsonError>(&buf[0..size]) {
+        return Err(anyhow!("Failed: {}", json_error.error.message))
+    }
     if !get_response {
         return Ok(None);
     }
