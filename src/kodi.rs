@@ -40,6 +40,12 @@ struct Repeat<'a> {
 }
 
 #[derive(Serialize)]
+struct Goto<'a> {
+    playerid: i8,
+    to: &'a str,
+}
+
+#[derive(Serialize)]
 struct PlaylistPos {
     playlistid: i8,
     position: i32,
@@ -167,6 +173,17 @@ pub fn update_vol(increment: i8) -> Result<()> {
         i => i,
     };
     set_vol(new_vol)
+}
+
+pub fn next() -> Result<()> {
+    req::<Goto, ()>(
+        "Player.GoTo",
+        &Goto {
+            playerid: 0,
+            to: "next",
+        },
+    )?;
+    Ok(())
 }
 
 #[cfg(test)]

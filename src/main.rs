@@ -62,6 +62,10 @@ fn loop_once(
             Some('3') => {
                 log::info!("ADC value: {}", board.adc.read(&mut board.adc_pin)?);
             }
+            Some('A') => {
+                log::info!("Playing next");
+                kodi::next()?;
+            }
             Some('*') => {
                 log::info!("Decrementing volume");
                 kodi::update_vol(-2i8)?;
