@@ -104,6 +104,8 @@ fn main() -> Result<()> {
     let mut last: Option<char> = None;
     let mut debounce = 1i8;
 
+    let mut errors = 0i8;
+
     let mut toggle_led = false;
 
     // signal we got wifi and we're ready
@@ -113,7 +115,15 @@ fn main() -> Result<()> {
 
     loop {
         if let Err(e) = loop_once(&mut board, &mut last, &mut debounce, &mut toggle_led) {
-            log::info!("Got error: {:?}", e);
+            log::warn!("Got error: {:?}", e);
+            errors += 1;
+            if errors > 10 {
+                log::warn!("Too many errors, rebooting");
+                led::neopixel(led::Rgb::new(10, 0, 0), &mut board.led)?;
+                std::thread::sleep(std::time::Duration::from_millis(300));
+                led::neopixel(led::Rgb::new(0, 0, 0), &mut board.led)?;
+                esp_idf_svc::hal::reset::restart();
+            }
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
