@@ -23,7 +23,7 @@ struct PlayerId {
     playerid: i8,
 }
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 struct Volume {
     volume: i8,
 }
@@ -56,11 +56,6 @@ struct JsonError {
     #[allow(unused)]
     id: u8,
     error: JsonErrorInner,
-}
-
-#[derive(Deserialize)]
-struct Vol {
-    volume: i8,
 }
 
 fn req<'a, Req, Resp>(method: &'a str, params: &'a Req) -> Result<Option<Resp>>
@@ -120,7 +115,7 @@ pub fn set_vol(volume: i8) -> Result<()> {
     Ok(())
 }
 pub fn update_vol(increment: i8) -> Result<()> {
-    let cur_vol = req::<Properties, Vol>(
+    let cur_vol = req::<Properties, Volume>(
         "Application.GetProperties",
         &Properties {
             properties: &["volume"],
