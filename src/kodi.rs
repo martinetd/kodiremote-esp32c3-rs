@@ -51,6 +51,11 @@ struct PlaylistPos {
     position: i32,
 }
 
+#[derive(Serialize)]
+struct PlaylistItem {
+    item: PlaylistPos,
+}
+
 #[derive(Deserialize)]
 struct JsonResponse<Payload> {
     #[allow(unused)]
@@ -128,25 +133,32 @@ where
     Ok(Some(json_response.result))
 }
 
+pub fn repeat() -> Result<()> {
+    req::<Repeat, ()>(
+        "Player.SetRepeat",
+        &Repeat {
+            playerid: 0,
+            repeat: "all",
+        },
+    )?;
+    Ok(())
+}
+
 pub fn play_pause() -> Result<()> {
     match req::<PlayerId, Speed>("Player.PlayPause", &PlayerId { playerid: 0 }) {
         Ok(Some(Speed { speed: i })) if i != 0 => {
             // ensure we have repeat on, it somehow keeps dropping...
-            req::<Repeat, ()>(
-                "Player.SetRepeat",
-                &Repeat {
-                    playerid: 0,
-                    repeat: "all",
-                },
-            )?;
+            repeat()?;
         }
         Err(_) => {
             // try to play player 0
-            req::<PlaylistPos, ()>(
+            req::<PlaylistItem, ()>(
                 "Player.Open",
-                &PlaylistPos {
-                    playlistid: 0,
-                    position: 0,
+                &PlaylistItem {
+                    item: PlaylistPos {
+                        playlistid: 0,
+                        position: 0,
+                    },
                 },
             )?;
         }
@@ -183,6 +195,8 @@ pub fn next() -> Result<()> {
             to: "next",
         },
     )?;
+    // repeat also drops here..
+    repeat()?;
     Ok(())
 }
 
