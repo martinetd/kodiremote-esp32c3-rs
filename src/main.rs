@@ -113,9 +113,7 @@ fn main() -> Result<()> {
     let mut toggle_led = false;
 
     // signal we got wifi and we're ready
-    led::neopixel(led::Rgb::new(10, 10, 0), &mut board.led)?;
-    std::thread::sleep(std::time::Duration::from_millis(300));
-    led::neopixel(led::Rgb::new(0, 0, 0), &mut board.led)?;
+    led::blink(&mut board.led, 10, 10, 0, 300)?;
 
     loop {
         if let Err(e) = loop_once(&mut board, &mut last, &mut debounce, &mut toggle_led) {
@@ -123,9 +121,7 @@ fn main() -> Result<()> {
             errors += 1;
             if errors > 10 {
                 log::warn!("Too many errors, rebooting");
-                led::neopixel(led::Rgb::new(10, 0, 0), &mut board.led)?;
-                std::thread::sleep(std::time::Duration::from_millis(300));
-                led::neopixel(led::Rgb::new(0, 0, 0), &mut board.led)?;
+                led::blink(&mut board.led, 10, 0, 0, 300)?;
                 esp_idf_svc::hal::reset::restart();
             }
         }

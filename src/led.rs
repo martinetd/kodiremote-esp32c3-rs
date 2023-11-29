@@ -34,6 +34,12 @@ pub fn neopixel(rgb: Rgb, tx: &mut TxRmtDriver) -> Result<()> {
     Ok(())
 }
 
+pub fn blink(tx: &mut TxRmtDriver, r: u8, g: u8, b: u8, ms: u64) -> Result<()> {
+    neopixel(Rgb::new(r, g, b), tx)?;
+    std::thread::sleep(std::time::Duration::from_millis(ms));
+    neopixel(Rgb::new(0, 0, 0), tx)
+}
+
 pub struct Rgb {
     r: u8,
     g: u8,
