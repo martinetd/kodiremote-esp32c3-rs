@@ -65,10 +65,13 @@ fn loop_once(
             Some('*') => {
                 log::info!("Decrementing volume");
                 kodi::update_vol(-2i8)?;
+                // repeat key after 200ms
+                *debounce = 20i8;
             }
             Some('0') => {
                 log::info!("Incrementing volume");
                 kodi::update_vol(2i8)?;
+                *debounce = 20i8;
             }
             _ => (),
         };
